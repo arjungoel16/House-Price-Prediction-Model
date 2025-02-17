@@ -10,10 +10,15 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-client = MongoClient("mongodb://localhost:27017/")
+client = MongoClient("mongodb://localhost:27017/?directConnection=true&serverSelectionTimeoutMS=2000")
 db = client.house_price_db
 
-with open("model.pkl", "rb") as f:
+model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
+
+if not os.path.exists(model_path):
+    raise FileNotFoundError(f"Model file not found: {model_path}")
+
+with open(model_path, "rb") as f:
     model = pickle.load(f)
 
 def retrain_model():
@@ -22,16 +27,19 @@ def retrain_model():
 @app.route('/locations', methods=['GET'])
 def get_locations():
     try:
-        # Fetch all unique locations from MongoDB
+        # Ensure locations are retrieved correctly
         locations_cursor = db.locations.find({}, {"_id": 0, "location": 1})
         locations = [loc["location"] for loc in locations_cursor if "location" in loc]
 
         if not locations:
-            return jsonify({"locations": []}), 404  # Return empty if no locations found
+            print("No locations found in the database.")  # Debugging log
+            return jsonify({"locations": []}), 404
 
         return jsonify({"locations": locations})
     except Exception as e:
+        print(f"Error fetching locations: {str(e)}")  # Debugging log
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
