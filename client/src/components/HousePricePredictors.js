@@ -6,6 +6,7 @@ function HousePricePredictor() {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [customLocation, setCustomLocation] = useState(""); // Store user-inputted location
+  const [showCustomLocation, setShowCustomLocation] = useState(false); // Track if custom input should be shown
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -25,9 +26,14 @@ function HousePricePredictor() {
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
 
-    if (name === "location" && value === "Other") {
-      setFeatures((prev) => ({ ...prev, location: "" })); // Reset location value
-      setCustomLocation(""); // Reset custom location field
+    if (name === "location") {
+      if (value === "Other") {
+        setShowCustomLocation(true); // Show text input for custom location
+        setFeatures((prev) => ({ ...prev, location: "" })); // Reset location value
+      } else {
+        setShowCustomLocation(false); // Hide custom location input
+        setFeatures((prev) => ({ ...prev, location: value }));
+      }
     } else {
       setFeatures((prev) => ({ ...prev, [name]: value }));
     }
@@ -43,7 +49,7 @@ function HousePricePredictor() {
     setPrediction(null);
 
     try {
-      const selectedLocation = features.location === "" ? customLocation : features.location; // Use custom location if "Other"
+      const selectedLocation = showCustomLocation ? customLocation : features.location; // Use custom location if "Other"
 
       const response = await fetch("http://localhost:5000/predict", {
         method: "POST",
@@ -85,8 +91,9 @@ function HousePricePredictor() {
           </div>
         ))}
 
+        {/* Location Dropdown */}
         <div className="flex flex-col">
-          <label htmlFor="location" className="text-sm font-medium text-gray-600">Location:</label>
+          <label htmlFor="location" className="text-sm font-medium text-gray-600">Enter your location:</label>
           <select
             id="location"
             name="location"
@@ -102,8 +109,8 @@ function HousePricePredictor() {
           </select>
         </div>
 
-        {/* Show text input if "Other" is selected */}
-        {features.location === "" && (
+        {/* Custom Location Input (only shows when "Other" is selected) */}
+        {showCustomLocation && (
           <div className="flex flex-col">
             <label htmlFor="custom-location" className="text-sm font-medium text-gray-600">Enter your city/town:</label>
             <input
