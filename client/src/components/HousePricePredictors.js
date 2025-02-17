@@ -5,6 +5,7 @@ function HousePricePredictor() {
   const [prediction, setPrediction] = useState(null);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [customLocation, setCustomLocation] = useState(""); // Store user-inputted location
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -12,7 +13,7 @@ function HousePricePredictor() {
         const response = await fetch("http://localhost:5000/locations");
         if (!response.ok) throw new Error("Failed to fetch locations");
         const data = await response.json();
-        setLocations(data.locations);
+        setLocations([...data.locations, "Other"]); // Add "Other" to the dropdown
       } catch (error) {
         console.error("Error fetching locations:", error);
       }
@@ -22,8 +23,19 @@ function HousePricePredictor() {
   }, []);
 
   const handleChange = useCallback((e) => {
-    setFeatures((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+
+    if (name === "location" && value === "Other") {
+      setFeatures((prev) => ({ ...prev, location: "" })); // Reset location value
+      setCustomLocation(""); // Reset custom location field
+    } else {
+      setFeatures((prev) => ({ ...prev, [name]: value }));
+    }
   }, []);
+
+  const handleCustomLocationChange = (e) => {
+    setCustomLocation(e.target.value);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -31,10 +43,12 @@ function HousePricePredictor() {
     setPrediction(null);
 
     try {
+      const selectedLocation = features.location === "" ? customLocation : features.location; // Use custom location if "Other"
+
       const response = await fetch("http://localhost:5000/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ features }),
+        body: JSON.stringify({ features: { ...features, location: selectedLocation } }),
       });
 
       if (!response.ok) throw new Error("Prediction failed");
@@ -87,6 +101,23 @@ function HousePricePredictor() {
             ))}
           </select>
         </div>
+
+        {/* Show text input if "Other" is selected */}
+        {features.location === "" && (
+          <div className="flex flex-col">
+            <label htmlFor="custom-location" className="text-sm font-medium text-gray-600">Enter your city/town:</label>
+            <input
+              type="text"
+              id="custom-location"
+              name="customLocation"
+              value={customLocation}
+              onChange={handleCustomLocationChange}
+              placeholder="Enter your city or town"
+              className="border rounded-lg p-3 focus:ring-2 focus:ring-blue-400"
+              required
+            />
+          </div>
+        )}
 
         <button
           type="submit"
