@@ -32,7 +32,8 @@ def train_and_save_model(df):
     
     param_grid = {'n_estimators': [100, 200], 'max_depth': [None, 10]}
     rf = RandomForestRegressor()
-    grid_search = GridSearchCV(rf, param_grid, cv=3, scoring='r2')
+    # ensuring cv never exceeds the number of samples in the training set
+    grid_search = GridSearchCV(rf, param_grid, cv=min(2, len(X_train)), scoring='r2')
     grid_search.fit(X_train, y_train)
     best_rf_model = grid_search.best_estimator_
     best_rf_model.fit(X_train, y_train)
