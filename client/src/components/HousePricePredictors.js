@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 
+// HousePricePredictor component allows users to input house details and get a price prediction.
 function HousePricePredictor() {
+  // State for user input features, prediction result, available locations, and loading state.
   const [features, setFeatures] = useState({ size: "", bedrooms: "", bathrooms: "", location: "" });
   const [prediction, setPrediction] = useState(null);
   const [locations, setLocations] = useState([]);
@@ -8,13 +10,21 @@ function HousePricePredictor() {
   const [customLocation, setCustomLocation] = useState(""); // Store user-inputted location
   const [showCustomLocation, setShowCustomLocation] = useState(false); // Track if custom input should be shown
 
+  // Fetch available locations from the backend when the component mounts.
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         const response = await fetch("http://localhost:5000/locations");
         if (!response.ok) throw new Error("Failed to fetch locations");
+
         const data = await response.json();
-        setLocations([...data.locations, "Other"]); // Add "Other" to the dropdown
+        console.log("Fetched locations:", data.locations); // Debug log
+
+        if (data.locations && data.locations.length > 0) {
+          setLocations([...data.locations, "Other"]);
+        } else {
+          console.warn("No locations received from API.");
+        }
       } catch (error) {
         console.error("Error fetching locations:", error);
       }
@@ -23,6 +33,8 @@ function HousePricePredictor() {
     fetchLocations();
   }, []);
 
+
+  // Handles changes to form fields, including handling the "Other" location selection.
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
 
@@ -39,10 +51,12 @@ function HousePricePredictor() {
     }
   }, []);
 
+  // Updates the custom location state when the user types a new custom location.
   const handleCustomLocationChange = (e) => {
     setCustomLocation(e.target.value);
   };
 
+  // Handles form submission and sends user input to the backend for prediction.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -73,6 +87,7 @@ function HousePricePredictor() {
       <h1 className="text-2xl font-bold text-center mb-6 text-gray-700">House Price Predictor</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Input fields for size, bedrooms, and bathrooms */}
         {["size", "bedrooms", "bathrooms"].map((field) => (
           <div key={field} className="flex flex-col">
             <label htmlFor={field} className="text-sm font-medium text-gray-600">
@@ -91,7 +106,7 @@ function HousePricePredictor() {
           </div>
         ))}
 
-        {/* Location Dropdown */}
+        {/* Location dropdown */}
         <div className="flex flex-col">
           <label htmlFor="location" className="text-sm font-medium text-gray-600">Enter your location:</label>
           <select
@@ -126,6 +141,7 @@ function HousePricePredictor() {
           </div>
         )}
 
+        {/* Submit button */}
         <button
           type="submit"
           className="w-full bg-blue-500 text-white font-semibold p-3 rounded-lg transition hover:bg-blue-600 disabled:bg-gray-400"
@@ -135,6 +151,7 @@ function HousePricePredictor() {
         </button>
       </form>
 
+      {/* Display predicted price */}
       {prediction !== null && (
         <div className="mt-6 bg-gray-100 p-4 rounded-lg shadow-md text-center">
           <p className="text-lg font-semibold text-gray-700">Predicted Price:</p>
